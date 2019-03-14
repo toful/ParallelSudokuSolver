@@ -66,7 +66,7 @@ int recorrer( int i, int j )
 ////////////////////////////////////////////////////////////////////
 int main()
 {
-    int i,j,k;
+    //int i,j,k;
     long int nsol;
 
     nsol = recorrer( 0, 0 );

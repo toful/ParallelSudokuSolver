@@ -50,6 +50,7 @@ int recorrer( int i, int j )
     }
     else // hi ha un 0 hem de provar
     {
+        #pragma omp parallel for default(none) private(taula, k) shared(i, j) reduction(+:s) 
         for ( k=1; k < 10; k++ )
             if ( puc_posar( i, j, k ) ) 
             {
@@ -66,7 +67,7 @@ int recorrer( int i, int j )
 ////////////////////////////////////////////////////////////////////
 int main()
 {
-    int i,j,k;
+    //int i,j,k;
     long int nsol;
 
     nsol = recorrer( 0, 0 );

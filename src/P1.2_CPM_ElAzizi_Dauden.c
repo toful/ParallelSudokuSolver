@@ -49,8 +49,7 @@ int recorrer( int i, int j )
         else return( 1 ); // Final de la taula
     }
     else // hi ha un 0 hem de provar
-    {
-        #pragma omp parallel for default(none) private(taula, k) shared(i, j) reduction(+:s) 
+    { 
         for ( k=1; k < 10; k++ )
             if ( puc_posar( i, j, k ) ) 
             {
@@ -65,12 +64,40 @@ int recorrer( int i, int j )
 }
 
 ////////////////////////////////////////////////////////////////////
+int First_recorrer( int i, int j )
+{
+    int k;
+    long int s = 0;
+
+    if (taula[i][j]) //Valor fixe no s'ha d'iterar
+    {
+        if ( j<8 ) return( First_recorrer( i, j+1 ) );
+        else if ( i<8 ) return( First_recorrer( i+1, 0 ) );
+        else return( 1 ); // Final de la taula
+    }
+    else // hi ha un 0 hem de provar
+    {
+        #pragma omp parallel for default(none) private(taula, k) shared(i, j) reduction(+:s) 
+        for ( k=1; k < 10; k++ )
+            if ( puc_posar( i, j, k ) ) 
+            {
+                printf("%d\n", k);
+                taula[i][j] = k; 
+                if (j<8) s += recorrer( i, j+1 );
+                else if (i<8) s += recorrer( i+1, 0 );
+                else s++;
+                taula[i][j] = 0;
+            }
+    }
+    return(s);
+}
+////////////////////////////////////////////////////////////////////
 int main()
 {
     //int i,j,k;
     long int nsol;
 
-    nsol = recorrer( 0, 0 );
+    nsol = First_recorrer( 0, 0 );
     printf( "numero solucions : %ld\n", nsol );
     exit( 0 );
 }

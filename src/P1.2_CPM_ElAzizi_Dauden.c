@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+#include <omp.h>
 
 #define CERT 1
 #define FALS 0
 
+int *** taules;
+int max_num_treads;
 // Ha de ser inicialment correcta !!
 int taula[9][9] = \
         {1,2,3, 4,5,6,  7,8,9,  \
@@ -20,129 +23,118 @@ int taula[9][9] = \
          0,0,0, 0,0,0,  0,0,0,  \
          0,0,0, 0,0,0,  0,0,0};
 
-void copy_table( int new_table[][9] ){
+void init_taules(){
+    max_num_treads = omp_get_max_threads();
+    taules = ( int *** ) malloc( sizeof( int** ) * max_num_treads );
+    for( int i = 0; i < max_num_treads; i++ ){
+        taules[i] = ( int ** ) calloc( 9, sizeof( int* ) );
+        for( int j = 0; j < 9; j++){
+            taules[i][j] = ( int * ) calloc( 9, sizeof( int ) );
+            for( int k = 0; k < 9; k++){
+                taules[i][j][k]=taula[j][k];
+            }
+        }
+    }
+}
+
+void print_table( int table[][9] ){
     for( int i = 0; i < 9; i++){
         for( int j = 0; j < 9; j++){
-            new_table[i][j]=taula[i][j];
+            printf( "\t%d", table[i][j] );
         }
+        printf("\n");
     }
 }
 
 /*Comprova que en la posició (x,y) del sudoku es pugi ficar l'element z*/
-int puc_posar(int x, int y, int z)
+int puc_posar(int x, int y, int z, int thread )
 {
-    int i,j,l,pi,pj;
+    int i,j,pi,pj;
+    //int thread = omp_get_thread_num();
+
+    for ( i=0; i<9; i++ ){
+        if ( taules[thread][x][i] == z ) return(FALS);
+        if ( taules[thread][i][y] == z ) return(FALS);
+    }
     // Quadrat
     pi = ( x / 3 ) * 3; //truncament
     pj = y - y % 3; //truncament
-
-    //#pragma omp parallel
-    {
-        //#pragma omp for
-        for ( l=0; l<9; l++ ){
-            if ( taula[x][l] == z || taula[l][y] == z ) return(FALS); // Comprovem que z no estigui en la fila ni columna x 
-        }
-        //#pragma omp for
-        for ( i = 0; i < 3; i++) 
-            for ( j = 0; j < 3; j++) 
-                if ( taula[ pi+i ][ pj+i ] == z ) return(FALS);
-    }
+    for ( i = 0; i < 3; i++) 
+        for ( j = 0; j < 3; j++) 
+            if ( taules[thread][ pi+i ][ pj+j ] == z ) return(FALS);
     return(CERT);
-    
 }
 
 ////////////////////////////////////////////////////////////////////
-int recorrer( int i, int j )
+int recorrer( int i, int j, int thread )
 {
     int k;
     long int s = 0;
+    //int thread = omp_get_thread_num();
 
-    if (taula[i][j]) //Valor fixe no s'ha d'iterar
+    if ( taules[thread][i][j] ) //Valor fixe no s'ha d'iterar
     {
-        if ( j<8 ) return( recorrer( i, j+1 ) );
-        else if ( i<8 ) return( recorrer( i+1, 0 ) );
+        if ( j<8 ) return( recorrer( i, j+1, thread ) );
+        else if ( i<8 ) return( recorrer( i+1, 0, thread ) );
         else return( 1 ); // Final de la taula
     }
     else // hi ha un 0 hem de provar
     { 
         for ( k=1; k < 10; k++ )
-            if ( puc_posar( i, j, k ) ) 
+            if ( puc_posar( i, j, k, thread ) ) 
             {
-                taula[i][j] = k; 
-                if (j<8) s += recorrer( i, j+1 );
-                else if (i<8) s += recorrer( i+1, 0 );
+                taules[thread][i][j] = k; 
+                if (j<8) s += recorrer( i, j+1, thread );
+                else if (i<8) s += recorrer( i+1, 0, thread );
                 else s++;
-                taula[i][j] = 0;
+                taules[thread][i][j] = 0;
             }
     }
     return(s);
 }
 
 ////////////////////////////////////////////////////////////////////
-int recorrer_v2( int i, int j, int table[][9] )
+int firstRecorrer( int i, int j )
 {
     int k;
     long int s = 0;
+    int thread;
 
-    if (table[i][j]) //Valor fixe no s'ha d'iterar
+    if ( taules[thread][i][j] ) //Valor fixe no s'ha d'iterar
     {
-        if ( j<8 ) return( recorrer_v2( i, j+1, table ) );
-        else if ( i<8 ) return( recorrer_v2( i+1, 0, table ) );
-        else return( 1 ); // Final de la taula
-    }
-    else // hi ha un 0 hem de provar
-    { 
-        for ( k=1; k < 10; k++ )
-            if ( puc_posar( i, j, k ) ) 
-            {
-                taula[i][j] = k; 
-                if (j<8) s += recorrer_v2( i, j+1, table );
-                else if (i<8) s += recorrer_v2( i+1, 0, table );
-                else s++;
-                taula[i][j] = 0;
-            }
-    }
-    return(s);
-}
-
-////////////////////////////////////////////////////////////////////
-int First_recorrer( int i, int j )
-{
-    int k;
-    long int s = 0;
-
-    if (taula[i][j]) //Valor fixe no s'ha d'iterar
-    {
-        if ( j<8 ) return( First_recorrer( i, j+1 ) );
-        else if ( i<8 ) return( First_recorrer( i+1, 0 ) );
+        if ( j<8 ) return( firstRecorrer( i, j+1 ) );
+        else if ( i<8 ) return( firstRecorrer( i+1, 0 ) );
         else return( 1 ); // Final de la taula
     }
     else // hi ha un 0 hem de provar
     {
-        //#pragma omp parallel for default(none) private(taula, k) shared(i, j) reduction(+:s)
-        #pragma omp parallel for reduction(+:s) 
-        for ( k=1; k < 10; k++ )
-            if ( puc_posar( i, j, k ) ) 
-            {
-                int new_table[9][9];
-                copy_table( new_table );
-                new_table[i][j] = k; 
-                if (j<8) s += recorrer_v2( i, j+1, new_table );
-                else if (i<8) s += recorrer_v2( i+1, 0, new_table );
-                else s++;
-                //taula[i][j] = 0;
-            }
+        #pragma omp parallel
+        {
+            #pragma omp for reduction( +:s ) 
+            for ( k=1; k < 10; k++ )
+                if ( puc_posar( i, j, k, thread ) ) 
+                {
+                    thread = omp_get_thread_num();
+                    taules[thread][i][j] = k; 
+                    if (j<8) s += recorrer( i, j+1, thread );
+                    else if (i<8) s += recorrer( i+1, 0, thread );
+                    else s++;
+                    taules[thread][i][j] = 0;
+                    printf("Results using thread %d: %li\n", thread, s);
+                }
+        }
     }
-    return(s);
+    return( s );
 }
+
 ////////////////////////////////////////////////////////////////////
 int main()
 {
     //int i,j,k;
     long int nsol;
 
-    //nsol = recorrer( 0, 0 );
-    nsol = First_recorrer( 0, 0 );
+    init_taules();
+    nsol = firstRecorrer( 0, 0 );
     printf( "numero solucions : %ld\n", nsol );
     exit( 0 );
 }

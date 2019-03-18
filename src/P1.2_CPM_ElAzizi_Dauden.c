@@ -112,16 +112,18 @@ int firstRecorrer( int i, int j )
         {
             #pragma omp for reduction( +:s )
             for ( k=1; k < 10; k++ )
+            {
+                thread = omp_get_thread_num();
                 if ( puc_posar( i, j, k, thread ) ) 
                 {
-                    thread = omp_get_thread_num();
                     taules[thread][i][j] = k; 
                     if (j<8) s += recorrer( i, j+1, thread );
                     else if (i<8) s += recorrer( i+1, 0, thread );
                     else s++;
                     taules[thread][i][j] = 0;
-                    printf("Results using thread %d: %li\n", thread, s);
+                    printf("%d Results using thread %d: %li\n", k, thread, s);
                 }
+            }
         }
     }
     return( s );

@@ -98,7 +98,7 @@ int firstRecorrer( int i, int j )
 {
     int k;
     long int s = 0;
-    int thread;
+    int thread = 0;
 
     if ( taules[thread][i][j] ) //Valor fixe no s'ha d'iterar
     {
@@ -108,9 +108,9 @@ int firstRecorrer( int i, int j )
     }
     else // hi ha un 0 hem de provar
     {
-        #pragma omp parallel
+        #pragma omp parallel firstprivate( thread ) 
         {
-            #pragma omp for reduction( +:s ) 
+            #pragma omp for reduction( +:s )
             for ( k=1; k < 10; k++ )
                 if ( puc_posar( i, j, k, thread ) ) 
                 {

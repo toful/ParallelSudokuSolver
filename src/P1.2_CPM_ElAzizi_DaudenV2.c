@@ -37,19 +37,6 @@ int taula[9][9] = \
          0,0,0, 0,0,0,  0,0,0,  \
          0,0,0, 0,0,0,  0,0,0};
 
-/*void init_taules(){
-    max_num_treads = omp_get_max_threads();
-    taules = ( int *** ) malloc( sizeof( int** ) * max_num_treads );
-    for( int i = 0; i < max_num_treads; i++ ){
-        taules[i] = ( int ** ) calloc( 9, sizeof( int* ) );
-        for( int j = 0; j < 9; j++){
-            taules[i][j] = ( int * ) calloc( 9, sizeof( int ) );
-            for( int k = 0; k < 9; k++){
-                taules[i][j][k]=taula[j][k];
-            }
-        }
-    }
-}*/
 
 void print_table( int table[][9] ){
     int i, j;
@@ -205,7 +192,7 @@ void init_dataset( int i, int j ){
     {
         if ( j<8 ) return( init_dataset( i, j+1 ) );
         else if ( i<8 ) return( init_dataset( i+1, 0 ) );
-        else printf("The table is full of numbers\n");; // Final de la taula
+        else printf("The table is full of numbers\n"); // Final de la taula
     }
     else // hi ha un 0 hem de provar
     { 
@@ -250,9 +237,9 @@ int main( int nargs, char* args[] )
     int i, parts;
     long int nsol = 0;
 
-    assert(nargs == 2);
-    parts = atoi(args[1]);
-    if (parts < 2) assert("Han d'haver dues parts com a minim" == 0);
+    assert( nargs == 2 );
+    parts = atoi( args[1] );
+    if ( parts < 2 ) assert("Han d'haver dues parts com a minim" == 0);
     omp_set_num_threads( parts );
     max_num_treads = parts;
 
@@ -265,7 +252,7 @@ int main( int nargs, char* args[] )
     }*/
     #pragma omp parallel for reduction( +:nsol ) schedule( dynamic, 1)
     for( i=0; i<num_possible_vaules; i++ ){
-        printf("Executing part %d by thread %d\n", i, omp_get_thread_num() );
+        printf( "Executing part %d by thread %d\n", i, omp_get_thread_num() );
         nsol += recorrer( taules[i].i, taules[i].j, i );
     }
     printf( "numero solucions : %ld\n", nsol );

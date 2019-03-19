@@ -52,8 +52,9 @@ int taula[9][9] = \
 }*/
 
 void print_table( int table[][9] ){
-    for( int i = 0; i < 9; i++){
-        for( int j = 0; j < 9; j++){
+    int i, j;
+    for( i = 0; i < 9; i++){
+        for( j = 0; j < 9; j++){
             printf( "%d   ", table[i][j] );
         }
         printf("\n");
@@ -62,8 +63,9 @@ void print_table( int table[][9] ){
 }
 
 void copy_table( int new_table[][9], int last_table[][9]  ){
-    for( int i = 0; i < 9; i++){
-        for( int j = 0; j < 9; j++){
+    int i, j;
+    for( i = 0; i < 9; i++){
+        for( j = 0; j < 9; j++){
             new_table[i][j] = last_table[i][j];
         }
     }
@@ -243,18 +245,26 @@ void init_dataset( int i, int j ){
 
 
 ////////////////////////////////////////////////////////////////////
-int main()
+int main( int nargs, char* args[] )
 {
-    //int i,j,k;
+    int i, parts;
     long int nsol = 0;
-    max_num_treads = omp_get_max_threads();
+
+    assert(nargs == 2);
+    parts = atoi(args[1]);
+    if (parts < 2) assert("Han d'haver dues parts com a minim" == 0);
+    omp_set_num_threads( parts );
+    max_num_treads = parts;
+
+    //max_num_treads = omp_get_max_threads();
+    printf("Number of simultaneous threads that are going to be used: %d\n", max_num_treads );
 
     init_dataset(0, 0);
-    /*for( int i=0; i<num_possible_vaules; i++ ){
+    /*for( i=0; i<num_possible_vaules; i++ ){
         print_table( taules[i].taula );
     }*/
     #pragma omp parallel for reduction( +:nsol ) schedule( dynamic, 1)
-    for( int i=0; i<num_possible_vaules; i++ ){
+    for( i=0; i<num_possible_vaules; i++ ){
         printf("Executing part %d by thread %d\n", i, omp_get_thread_num() );
         nsol += recorrer( taules[i].i, taules[i].j, i );
     }
